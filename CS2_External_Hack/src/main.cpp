@@ -17,7 +17,6 @@
 #include <Render.h>
 #include <Bone.h>
 
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 using namespace client_dll;
@@ -29,32 +28,19 @@ using namespace C_CSPlayerPawnBase;
 using namespace CCSPlayerController;
 using namespace C_BasePlayerPawn;
 using namespace C_BaseModelEntity;
+using namespace EntitySpottedState_t;
+using namespace CPlayer_MovementServices;
+using namespace CBasePlayerController;
 
 int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+float PI = atan(1) * 4;
 
 struct vec3
 {
     float x, y, z;
 };
-
-struct ClrRender
-{
-    BYTE red, green, blue;
-};
-
-struct GlowStruct
-{
-    BYTE base[4];
-    float red, green, blue, alpha;
-    BYTE buffer[16];
-    bool renderWhenIncluded, renderWhenUnIncluded, fullBloom;
-    BYTE buffer1[5];
-    int glowStyle;
-}Glow;
-
-ClrRender clrTeam;
-ClrRender clrEnemy;
 
 struct CurrProcess
 {
@@ -70,6 +56,10 @@ struct CurrProcess
     int localTeam;
     float tDelay;
     DWORD64 glowObj;
+    Vector3 localPlayerHeadPos;
+    Vector3 localViewAngles;
+    DWORD64 engine;
+    DWORD64 localController;
 }proc;
 
 struct GameOffsets
@@ -92,6 +82,10 @@ struct GameOffsets
     DWORD viewMatrix = dwViewMatrix;
     DWORD vecOrigin = m_vOldOrigin;
     DWORD gameScene = m_pGameSceneNode;
+    DWORD spottedByMask = m_bSpottedByMask;
+    DWORD viewAngles = dwViewAngles;
+    DWORD entitySpottedState = m_entitySpottedState;
+    DWORD hPawn = m_hPawn;
 
 }offset;
 
@@ -108,18 +102,20 @@ void getGameAddresses()
 
     do
     {
-        ProcessMgr.ReadMemory<DWORD64>(proc.moduleBase + offset.locPlayerController, proc.localPlayer);
-    } while (proc.localPlayer == NULL);
+        ProcessMgr.ReadMemory<DWORD64>(proc.moduleBase + offset.locPlayerController, proc.localController);
+    } while (proc.localController == NULL);
 
     ProcessMgr.ReadMemory<DWORD64>(proc.moduleBase + offset.entList, proc.entityList);
 
-    ProcessMgr.ReadMemory<DWORD64>(proc.localPlayer + offset.playerPawn, proc.localPawn);
+    ProcessMgr.ReadMemory<DWORD64>(proc.localController + offset.playerPawn, proc.localPawn);
 
     ProcessMgr.ReadMemory<DWORD64>(proc.entityList + 0x8 * ((proc.localPawn & 0x7FFF) >> 9) + 16, proc.listEntry);
 
     ProcessMgr.ReadMemory<DWORD64>(proc.listEntry + 120 * (proc.localPawn & 0x1FF), proc.localPlayer);
 
     ProcessMgr.ReadMemory<int>(proc.localPlayer + offset.team, proc.localTeam);
+
+    proc.engine = reinterpret_cast<DWORD64>(ProcessMgr.GetProcessModuleHandle(proc.processID, "engine2.dll"));
 }
 
 void antiFlashHandler()
@@ -343,6 +339,123 @@ void handleTBot()
     }
 }
 
+float getDistCoord(Vector3 enHeadPos)
+{
+    return (sqrt(pow((enHeadPos.x - proc.localPlayerHeadPos.x), 2) + pow((enHeadPos.y - proc.localPlayerHeadPos.y), 2) + pow((enHeadPos.z - proc.localPlayerHeadPos.z), 2)));
+}
+
+Vector3 calculateAngles(Vector3 entHeadPos)
+{
+    Vector3 oppPos = entHeadPos - proc.localPlayerHeadPos;
+
+    float distance = getDistCoord(entHeadPos);
+
+    //float hyp = sqrt(pow(oppPos.x, 2) + pow(oppPos.y, 2) + pow(oppPos.z, 2));
+
+    float Yaw = atan2(oppPos.y, oppPos.x) * 180 / PI;
+    //float Pitch = -atan(oppPos.z / distance) * 180 / PI;
+    float Pitch = -asin(oppPos.z / distance) * 180 / PI;
+
+    Vector3 newAngles{ Pitch, Yaw, 0 };
+
+    return newAngles;
+}
+
+bool checkTheEnt(int entTeam, Vector3 entHeadPos, bool entSpotted, bool localSpotted, float closestDistance, float maxDist, float maxAngle)
+{
+    if (entTeam == proc.localTeam)
+    {
+        return false;
+    }
+
+    float distance = getDistCoord(entHeadPos);
+
+    if (distance > maxDist || distance > closestDistance)
+    {
+        return false;
+    }
+
+    Vector3 newAngles = calculateAngles(entHeadPos);
+
+    float deltaAngle = sqrt(pow(newAngles.x - proc.localViewAngles.x, 2) + pow(newAngles.y - proc.localViewAngles.y, 2));
+
+    if (deltaAngle > maxAngle)
+    {
+        return false;
+    }
+
+    if (!entSpotted && !localSpotted)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+int findLocalPlayerInex()
+{
+    for (int i = 1; i < 32; i++)
+    {
+        DWORD64 listEntry;
+        ProcessMgr.ReadMemory<DWORD64>(proc.entityList + (8 * (i & 0x7FFF) >> 9) + 16, listEntry);
+
+        if (!listEntry)
+        {
+            continue;
+        }
+
+        DWORD64 ent;
+        ProcessMgr.ReadMemory<DWORD64>(listEntry + 120 * (i & 0x1FF), ent);
+
+        if (!ent)
+        {
+            continue;
+        }
+
+        DWORD64 entPawn;
+        ProcessMgr.ReadMemory<DWORD64>(ent + offset.playerPawn, entPawn);
+
+        DWORD64 listEntry2;
+        ProcessMgr.ReadMemory<DWORD64>(proc.entityList + 0x8 * ((entPawn & 0x7FFF) >> 9) + 16, listEntry2);
+
+        if (!listEntry2)
+        {
+            continue;
+        }
+
+        DWORD64 pCSPlayerPawn;
+        ProcessMgr.ReadMemory<DWORD64>(listEntry2 + 120 * (entPawn & 0x1FF), pCSPlayerPawn);
+
+        if (!pCSPlayerPawn)
+        {
+            continue;
+        }
+
+        if (pCSPlayerPawn == proc.localPlayer)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+
+
+void smoothAim(Vector3 desiredAngles)
+{
+    int numberOfChanges = 10;
+    Vector3 AngleDiff = desiredAngles - proc.localViewAngles;
+    float oneStepPitch = AngleDiff.x / numberOfChanges;
+    float oneStepYawn = AngleDiff.y / numberOfChanges;
+
+    for (int i = 0; i < numberOfChanges; i++)
+    {
+        Vector3 newAngles{ proc.localViewAngles.x + oneStepPitch, proc.localViewAngles.y + oneStepYawn, proc.localViewAngles.z };
+        proc.localViewAngles = newAngles;
+        ProcessMgr.WriteMemory<Vector3>(proc.moduleBase + offset.viewAngles, newAngles);
+        Sleep(0.8);
+    }
+}
+
 LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
 {
     if (ImGui_ImplWin32_WndProcHandler(window, message, w_param, l_param))
@@ -358,6 +471,7 @@ LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM w_param, LPA
 
     return DefWindowProc(window, message, w_param, l_param);
 }
+
 
 INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 {
@@ -470,7 +584,8 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 
     bool running = true;
 
-    bool bBhop = false, bAntiFlash = false, bTriggerBot = false, bWallHack = false;
+    bool bBhop = false, bAntiFlash = false, bTriggerBot = false, bWallHack = false,
+        bAimBot = false;
 
     while (running)
     {
@@ -506,30 +621,27 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
         if (GetAsyncKeyState(VK_NUMPAD1) & 1)
         {
             bBhop = !bBhop;
-
-            // writeCheatstoConsole(bBhop, bAntiFlash, bTriggerBot, bWallHack);
         }
 
 
         if (GetAsyncKeyState(VK_NUMPAD2) & 1)
         {
             bAntiFlash = !bAntiFlash;
-
-            //writeCheatstoConsole(bBhop, bAntiFlash, bTriggerBot, bWallHack);
         }
 
         if (GetAsyncKeyState(VK_NUMPAD3) & 1)
         {
             bTriggerBot = !bTriggerBot;
-
-            // writeCheatstoConsole(bBhop, bAntiFlash, bTriggerBot, bWallHack);
         }
 
         if (GetAsyncKeyState(VK_NUMPAD5) & 1)
         {
             bWallHack = !bWallHack;
+        }
 
-            //writeCheatstoConsole(bBhop, bAntiFlash, bTriggerBot, bWallHack);
+        if (GetAsyncKeyState(VK_NUMPAD6) & 1)
+        {
+            bAimBot = !bAimBot;
         }
 
 
@@ -550,9 +662,24 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
             handleTBot();
         }
 
+
         //rendering goes here
-        if (bWallHack)
+        if (bWallHack || bAimBot)
         {
+            float closestDistance = 9999999999;
+            DWORD64 closestEnemy = NULL;
+            Vector3 enemyHead;
+
+            DWORD64 locGameScene;
+            ProcessMgr.ReadMemory<DWORD64>(proc.localPlayer + offset.gameScene, locGameScene);
+            DWORD64 locBoneArray;
+            ProcessMgr.ReadMemory<DWORD64>(locGameScene + 0x160 + 0x80, locBoneArray);
+
+            ProcessMgr.ReadMemory<Vector3>(locBoneArray + bones::head * 32, proc.localPlayerHeadPos);
+
+            ProcessMgr.ReadMemory<Vector3>(proc.moduleBase + offset.viewAngles, proc.localViewAngles);
+
+
             for (int i = 1; i < 32; i++)
             {
                 RGB entityColor = { 255, 0, 0 };
@@ -613,6 +740,17 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
                     continue;
                 }
 
+                ProcessMgr.ReadMemory<DWORD64>(proc.moduleBase + offset.locPlayerController, proc.localController);
+
+                int localPlayerIndex = findLocalPlayerInex();
+
+                int mask;
+                ProcessMgr.ReadMemory<int>(pCSPlayerPawn + offset.entitySpottedState + offset.spottedByMask, mask);
+                bool isSpoted = mask & (DWORD(1) << (localPlayerIndex - 1));
+
+                int localMask;
+                ProcessMgr.ReadMemory<int>(proc.localPlayer + offset.entitySpottedState + offset.spottedByMask, localMask);
+                bool isLocalSpoted = localMask & (DWORD(1) << (i - 1));
 
                 DWORD64 gameScene;
                 ProcessMgr.ReadMemory<DWORD64>(pCSPlayerPawn + offset.gameScene, gameScene);
@@ -628,83 +766,82 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
                 Vector3 screenPos = eOrigin.WTS(view_matrix);
                 Vector3 screenHead = eHead.WTS(view_matrix);
                 float headHeight = (screenPos.y - screenHead.y) / 8;
+                float headWidth = (screenPos.x - screenHead.x);
 
-                Vector3 eLeftArm;
-                ProcessMgr.ReadMemory<Vector3>(boneArray + bones::left_arm * 32, eLeftArm);
 
-                Vector3 eRightArm;
-                ProcessMgr.ReadMemory<Vector3>(boneArray + bones::right_arm * 32, eRightArm);
-
-                Vector3 screenLeftArm = eLeftArm.WTS(view_matrix);
-                Vector3 screenRightArm = eRightArm.WTS(view_matrix);
-
-                float boneWidth = (screenRightArm.x - screenLeftArm.x);
 
                 float height = screenPos.y - screenHead.y;
-                float width = height / 2.4f;
+                float width = height / 2.32f;
 
 
                 RGB entityHealth = { 2.55 * (100 - eHealth), 2.55 * (eHealth), 0 };
 
                 RGB white(255, 255, 255);
 
-
-                Render::DrawRect(
-                    screenHead.x - width / 2,
-                    screenHead.y - headHeight,
-                    width,
-                    height + headHeight * 2,
-                    entityColor,
-                    2.5,
-                    false,
-                    255
-                );
-                /*
-                Render::DrawRect(
-                    screenLeftArm.x,
-                    screenHead.y - headHeight,
-                    boneWidth,
-                    height + headHeight * 2,
-                    entityColor,
-                    2.5,
-                    true,
-                    32
-                );*/
-
-                Render::DrawHealth(
-                    screenHead.x - width / 2,
-                    screenHead.y,
-                    height,
-                    entityHealth,
-                    3.5,
-                    eHealth,
-                    255
-                );
-
-                Render::DrawCircle(
-                    screenHead.x,
-                    screenHead.y,
-                    headHeight - 3,
-                    white,
-                    1.5,
-                    false,
-                    255
-                );
-
-                for (int i = 0; i < sizeof(boneConnections) / sizeof(boneConnections[0]); i++)
+                if (bAimBot)
                 {
-                    int bone1 = boneConnections[i].bone1;
-                    int bone2 = boneConnections[i].bone2;
-
-                    Vector3 vecBone, vecBone2;
-                    ProcessMgr.ReadMemory<Vector3>(boneArray + bone1 * 32, vecBone);
-                    ProcessMgr.ReadMemory<Vector3>(boneArray + bone2 * 32, vecBone2);
-
-                    Vector3 b1 = vecBone.WTS(view_matrix);
-                    Vector3 b2 = vecBone2.WTS(view_matrix);
-
-                    Render::DrawLine(b1.x, b1.y, b2.x, b2.y, white, 1.5, 255);
+                    if (checkTheEnt(entTeam, eHead, isSpoted, isLocalSpoted, closestDistance, 7500, 30))
+                    {
+                        closestDistance = getDistCoord(eHead);
+                        closestEnemy = pCSPlayerPawn;
+                        enemyHead = eHead;
+                    }
                 }
+
+                if (bWallHack)
+                {
+                    Render::DrawRect(
+                        screenHead.x - width / 2,
+                        screenHead.y - headHeight,
+                        width,
+                        height + headHeight * 2,
+                        entityColor,
+                        2.5,
+                        false,
+                        255
+                    );
+
+                    Render::DrawHealth(
+                        screenHead.x - width / 2,
+                        screenHead.y,
+                        height,
+                        entityHealth,
+                        3.5,
+                        eHealth,
+                        255
+                    );
+
+                    Render::DrawCircle(
+                        screenHead.x,
+                        screenHead.y,
+                        headHeight - 3,
+                        white,
+                        1.5,
+                        false,
+                        255
+                    );
+
+                    for (int i = 0; i < sizeof(boneConnections) / sizeof(boneConnections[0]); i++)
+                    {
+                        int bone1 = boneConnections[i].bone1;
+                        int bone2 = boneConnections[i].bone2;
+
+                        Vector3 vecBone, vecBone2;
+                        ProcessMgr.ReadMemory<Vector3>(boneArray + bone1 * 32, vecBone);
+                        ProcessMgr.ReadMemory<Vector3>(boneArray + bone2 * 32, vecBone2);
+
+                        Vector3 b1 = vecBone.WTS(view_matrix);
+                        Vector3 b2 = vecBone2.WTS(view_matrix);
+
+                        Render::DrawLine(b1.x, b1.y, b2.x, b2.y, white, 1.5, 255);
+                    }
+                }
+            }
+            if (closestEnemy != NULL && (GetKeyState(VK_LBUTTON) & 0x8000) != 0)
+            {
+                Vector3 aimBotAngles = calculateAngles(enemyHead);
+                //ProcessMgr.WriteMemory<Vector3>(proc.moduleBase + offset.viewAngles, aimBotAngles);
+                smoothAim(aimBotAngles);
             }
         }
 
@@ -754,4 +891,3 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 
     return 0;
 }
-
