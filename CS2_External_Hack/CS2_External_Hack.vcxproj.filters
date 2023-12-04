@@ -89,5 +89,8 @@
     <ClInclude Include="extra_files\imgui\vector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="extra_files\C_UTL_VECTOR\C_UTL_VECTOR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

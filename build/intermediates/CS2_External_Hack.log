@@ -20,30 +20,39 @@ C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\extra_files\i
 C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\extra_files\imgui\Render.h(38,54): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\extra_files\imgui\Render.h(38,50): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\extra_files\imgui\Render.h(50,95): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(103,87): warning C4244: 'argument': conversion from 'DWORD64' to 'DWORD', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(105,32): warning C4244: '=': conversion from 'DWORD64' to 'DWORD', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(107,93): warning C4244: 'argument': conversion from 'DWORD64' to 'DWORD', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(127,25): warning C4101: 'flD': unreferenced local variable
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(159,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(171,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(207,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(211,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(231,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(281,137): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(288,15): warning C4244: 'argument': conversion from 'float' to 'DWORD', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(647,43): warning C4838: conversion from 'double' to 'ImU32' requires a narrowing conversion
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(647,43): warning C4244: 'initializing': conversion from 'double' to 'ImU32', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(647,67): warning C4838: conversion from 'double' to 'ImU32' requires a narrowing conversion
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(647,67): warning C4244: 'initializing': conversion from 'double' to 'ImU32', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(656,28): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(655,21): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(654,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(653,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(677,21): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(676,31): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(675,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(706,58): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(706,52): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(706,46): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\src\main.cpp(706,40): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-  CS2_External_Hack.vcxproj -> C:\work\programming\cheats\cs2\CS2_External_Hack\build\CS2_External_Hack.exe
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(40,10): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(106,87): warning C4244: 'argument': conversion from 'DWORD64' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(108,32): warning C4244: '=': conversion from 'DWORD64' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(110,93): warning C4244: 'argument': conversion from 'DWORD64' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(127,83): warning C4244: 'argument': conversion from 'DWORD64' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(132,25): warning C4101: 'flD': unreferenced local variable
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(164,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(176,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(212,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(216,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(236,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(286,137): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(293,15): warning C4244: 'argument': conversion from 'float' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(353,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(404,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(479,15): warning C4244: 'argument': conversion from 'double' to 'DWORD', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(500,101): warning C4390: ';': empty controlled statement found; is this the intent?
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(763,35): warning C4305: 'initializing': truncation from '__int64' to 'float'
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(873,43): warning C4838: conversion from 'double' to 'ImU32' requires a narrowing conversion
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(873,43): warning C4244: 'initializing': conversion from 'double' to 'ImU32', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(873,67): warning C4838: conversion from 'double' to 'ImU32' requires a narrowing conversion
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(873,67): warning C4244: 'initializing': conversion from 'double' to 'ImU32', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(883,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(896,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(895,25): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(894,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(893,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(906,25): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(905,35): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(904,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(935,62): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(935,56): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(935,50): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\CS2ExtHackwIMGUI\CS2_External_Hack\src\main.cpp(935,44): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\work\programming\cheats\cs2\CS2_External_Hack\CS2_External_Hack\extra_files\imgui\vector.h(28): warning C4172: returning address of local variable or temporary
+  CS2_External_Hack.vcxproj -> C:\work\programming\cheats\CS2ExtHackwIMGUI\build\CS2_External_Hack.exe

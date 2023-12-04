@@ -16,6 +16,7 @@
 #include <vector.h>
 #include <Render.h>
 #include <Bone.h>
+#include <C_UTL_VECTOR.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -31,6 +32,7 @@ using namespace C_BaseModelEntity;
 using namespace EntitySpottedState_t;
 using namespace CPlayer_MovementServices;
 using namespace CBasePlayerController;
+using namespace C_CSPlayerPawn;
 
 int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -40,6 +42,11 @@ float PI = atan(1) * 4;
 struct vec3
 {
     float x, y, z;
+};
+
+struct Vector2
+{
+    float x, y;
 };
 
 struct CurrProcess
@@ -86,7 +93,9 @@ struct GameOffsets
     DWORD viewAngles = dwViewAngles;
     DWORD entitySpottedState = m_entitySpottedState;
     DWORD hPawn = m_hPawn;
-
+    DWORD shotsFired = m_iShotsFired;
+    DWORD punchCache = m_aimPunchCache;
+    DWORD aimPunchAngle = m_aimPunchAngle;
 }offset;
 
 
@@ -344,7 +353,7 @@ float getDistCoord(Vector3 enHeadPos)
     return (sqrt(pow((enHeadPos.x - proc.localPlayerHeadPos.x), 2) + pow((enHeadPos.y - proc.localPlayerHeadPos.y), 2) + pow((enHeadPos.z - proc.localPlayerHeadPos.z), 2)));
 }
 
-Vector3 calculateAngles(Vector3 entHeadPos)
+Vector3 calculateAngles(Vector3 entHeadPos, float height)
 {
     Vector3 oppPos = entHeadPos - proc.localPlayerHeadPos;
 
@@ -354,14 +363,29 @@ Vector3 calculateAngles(Vector3 entHeadPos)
 
     float Yaw = atan2(oppPos.y, oppPos.x) * 180 / PI;
     //float Pitch = -atan(oppPos.z / distance) * 180 / PI;
-    float Pitch = -asin(oppPos.z / distance) * 180 / PI;
+    float Pitch = 0;
+
+    float zeroPitchChangeHeight = -sin(proc.localViewAngles.x * PI / 180) * distance + proc.localPlayerHeadPos.z;
+
+    if (zeroPitchChangeHeight <= entHeadPos.z && zeroPitchChangeHeight > (entHeadPos.z - height / 2))
+    {
+        Pitch = proc.localViewAngles.x;
+    }
+    else if (zeroPitchChangeHeight <= (entHeadPos.z - height / 2))
+    {
+        Pitch = -asin((oppPos.z - height / 2) / distance) * 180 / PI;
+    }
+    else
+    {
+        Pitch = -asin(oppPos.z / distance) * 180 / PI;
+    }
 
     Vector3 newAngles{ Pitch, Yaw, 0 };
 
     return newAngles;
 }
 
-bool checkTheEnt(int entTeam, Vector3 entHeadPos, bool entSpotted, bool localSpotted, float closestDistance, float maxDist, float maxAngle)
+bool checkTheEnt(int entTeam, Vector3 entHeadPos, bool entSpotted, bool localSpotted, float height, float closestAngle, float maxDist, float maxAngle)
 {
     if (entTeam == proc.localTeam)
     {
@@ -370,16 +394,16 @@ bool checkTheEnt(int entTeam, Vector3 entHeadPos, bool entSpotted, bool localSpo
 
     float distance = getDistCoord(entHeadPos);
 
-    if (distance > maxDist || distance > closestDistance)
+    if (distance > maxDist)
     {
         return false;
     }
 
-    Vector3 newAngles = calculateAngles(entHeadPos);
+    Vector3 newAngles = calculateAngles(entHeadPos, height);
 
     float deltaAngle = sqrt(pow(newAngles.x - proc.localViewAngles.x, 2) + pow(newAngles.y - proc.localViewAngles.y, 2));
 
-    if (deltaAngle > maxAngle)
+    if (deltaAngle > maxAngle && deltaAngle < closestAngle)
     {
         return false;
     }
@@ -454,6 +478,64 @@ void smoothAim(Vector3 desiredAngles)
         ProcessMgr.WriteMemory<Vector3>(proc.moduleBase + offset.viewAngles, newAngles);
         Sleep(0.8);
     }
+}
+
+Vector2 oldPunch = { };
+
+Vector2 noRecoil(Vector3 desiredAngle)
+{
+    int locShotsFired;
+    ProcessMgr.ReadMemory<int>(proc.localPlayer + offset.shotsFired, locShotsFired);
+
+    if (locShotsFired > 1)
+    {
+        Vector2 punchAngle;
+        C_UTL_VECTOR punchCache;
+        ProcessMgr.ReadMemory<C_UTL_VECTOR>(proc.localPlayer + offset.punchCache, punchCache);
+
+        if (punchCache.Count > 0 && punchCache.Count < 0xFFFF)
+        {
+            //if (ProcessMgr.ReadMemory<Vector2>(punchCache.Data +
+                //(punchCache.Count - 1) * sizeof(Vector2), punchAngle))
+            if (ProcessMgr.ReadMemory<Vector2>(proc.localPlayer + offset.aimPunchAngle, punchAngle));
+            {
+                Vector2 newAngles = Vector2
+                {
+                    desiredAngle.x + oldPunch.x - punchAngle.x * 2.f,
+                    desiredAngle.y + oldPunch.y - punchAngle.y * 2.f,
+                };
+
+                if (newAngles.x > 89.0f)
+                {
+                    newAngles.x = 89.f;
+                }
+                if (newAngles.x < -89.0f)
+                {
+                    newAngles.x = -89.f;
+                }
+
+                while (newAngles.y > 180.f)
+                {
+                    newAngles.y -= 360.f;
+                }
+
+                while (newAngles.y < -180.f)
+                {
+                    newAngles.y += 360.f;
+                }
+
+                oldPunch.x = punchAngle.x * 2;
+                oldPunch.y = punchAngle.y * 2;
+
+                return newAngles;
+            }
+        }
+    }
+    else
+    {
+        oldPunch.x = oldPunch.y = 0.f;
+    }
+    return { proc.localViewAngles.x, proc.localViewAngles.y };
 }
 
 LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
@@ -584,7 +666,7 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 
     bool running = true;
 
-    bool bBhop = false, bAntiFlash = false, bTriggerBot = false, bWallHack = false,
+    bool bBhop = false, bAntiFlash = false, bTriggerBot = false, bNoRecoil = false, bWallHack = false,
         bAimBot = false;
 
     while (running)
@@ -611,6 +693,7 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
         ProcessMgr.ReadMemory<Vector3>(proc.localPlayer + offset.vecOrigin, localOrigin);
         view_matrix_t view_matrix;
         ProcessMgr.ReadMemory<view_matrix_t>(proc.moduleBase + offset.viewMatrix, view_matrix);
+        ProcessMgr.ReadMemory<Vector3>(proc.moduleBase + offset.viewAngles, proc.localViewAngles);
 
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
@@ -632,6 +715,11 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
         if (GetAsyncKeyState(VK_NUMPAD3) & 1)
         {
             bTriggerBot = !bTriggerBot;
+        }
+
+        if (GetAsyncKeyState(VK_NUMPAD4) & 1)
+        {
+            bNoRecoil = !bNoRecoil;
         }
 
         if (GetAsyncKeyState(VK_NUMPAD5) & 1)
@@ -662,6 +750,12 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
             handleTBot();
         }
 
+        if (bNoRecoil)
+        {
+            Vector2 recoilAngles = noRecoil(proc.localViewAngles);
+
+            ProcessMgr.WriteMemory<Vector2>(proc.moduleBase + offset.viewAngles, recoilAngles);
+        }
 
         //rendering goes here
         if (bWallHack || bAimBot)
@@ -677,8 +771,10 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 
             ProcessMgr.ReadMemory<Vector3>(locBoneArray + bones::head * 32, proc.localPlayerHeadPos);
 
-            ProcessMgr.ReadMemory<Vector3>(proc.moduleBase + offset.viewAngles, proc.localViewAngles);
+            float closestHeight = 0;
+            float closestAngle = 0;
 
+            ProcessMgr.ReadMemory<Vector3>(proc.moduleBase + offset.viewAngles, proc.localViewAngles);
 
             for (int i = 1; i < 32; i++)
             {
@@ -780,11 +876,14 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
 
                 if (bAimBot)
                 {
-                    if (checkTheEnt(entTeam, eHead, isSpoted, isLocalSpoted, closestDistance, 7500, 30))
+                    if (checkTheEnt(entTeam, eHead, isSpoted, isLocalSpoted, height / 2,
+                        closestAngle, 7500, 30))
                     {
-                        closestDistance = getDistCoord(eHead);
+                        Vector3 newAngles = calculateAngles(eHead, height / 2);
+                        closestAngle = sqrt(pow(newAngles.x - proc.localViewAngles.x, 2) + pow(newAngles.y - proc.localViewAngles.y, 2));
                         closestEnemy = pCSPlayerPawn;
                         enemyHead = eHead;
+                        closestHeight = height / 2;
                     }
                 }
 
@@ -837,11 +936,25 @@ INT APIENTRY WinMain(HINSTANCE instance, HINSTANCE, PSTR, INT cmd_show)
                     }
                 }
             }
-            if (closestEnemy != NULL && (GetKeyState(VK_LBUTTON) & 0x8000) != 0)
+
+            int locShotsFired;
+            ProcessMgr.ReadMemory<int>(proc.localPlayer + offset.shotsFired, locShotsFired);
+
+            if (locShotsFired == 0 || (GetKeyState(VK_LBUTTON) & 0x8000) != 0)
             {
-                Vector3 aimBotAngles = calculateAngles(enemyHead);
-                //ProcessMgr.WriteMemory<Vector3>(proc.moduleBase + offset.viewAngles, aimBotAngles);
-                smoothAim(aimBotAngles);
+                if (closestEnemy != NULL)
+                {
+                    Vector3 aimBotAngles = calculateAngles(enemyHead, closestHeight);
+                    //ProcessMgr.WriteMemory<Vector3>(proc.moduleBase + offset.viewAngles, aimBotAngles);
+                    if (locShotsFired > 1)
+                    {
+                        Vector2 controlRecoil = noRecoil(proc.localViewAngles);
+
+                        aimBotAngles.x = controlRecoil.x;
+                        aimBotAngles.y = controlRecoil.y;
+                    }
+                    smoothAim(aimBotAngles);
+                }
             }
         }
 

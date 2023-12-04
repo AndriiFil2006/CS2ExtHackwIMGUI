@@ -153,6 +153,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="extra_files\client.dll.hpp" />
+    <ClInclude Include="extra_files\C_UTL_VECTOR\C_UTL_VECTOR.h" />
     <ClInclude Include="extra_files\imgui\Bone.h" />
     <ClInclude Include="extra_files\imgui\imconfig.h" />
     <ClInclude Include="extra_files\imgui\imgui.h" />
